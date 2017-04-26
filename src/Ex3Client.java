@@ -13,57 +13,65 @@ public class Ex3Client {
 		 	InputStream is = socket.getInputStream();
 		 	OutputStream out = socket.getOutputStream();
 		 	value = is.read();
-		 	System.out.println(value);
+		 	System.out.println("Number of bytes: " + value);
 		 	byte [] arr = new byte [value];
+		 	System.out.print("Data received: ");
 		 	for (int i = 0; i < value; i++) {
 		 		arr[i] = (byte) is.read();
 		 	}
+		 	for (int i = 0; i < arr.length; i++) {
+		 		if (i % 20 == 0) {
+		 			System.out.println();
+		 		}
+		 		System.out.print(String.format("%02x", arr[i]));
+		 		
+		 	}
 		 	short checkSum = checksum (arr);
-		 	byte [] returnData = new byte[2];
+		 	byte [] data = new byte[2];
 		 	System.out.println(checkSum);
-		 	int temp = checkSum >> 8;
-			temp = temp & 0xFF;
-			returnData[0]=(byte) temp;
-			temp = (int)checkSum; 
-			temp = temp & 0xFF;
-			returnData[1] = (byte)temp;
-			out.write(returnData);
+		 	int tmp = checkSum >> 8;
+			tmp = tmp & 0xFF;
+			data[0]=(byte) tmp;
+			tmp = (int)checkSum; 
+			tmp = tmp & 0xFF;
+			data[1] = (byte)tmp;
+			System.out.println("Checksum Calculated: " + String.format("%02x", data[0]) + String.format("%02x", data[1]));
+			out.write(data);
 			value = is.read();
-			System.out.println(value);
+			if (value == 1) {
+				System.out.println("Response Good!");
+			}
+			else
+				System.out.println("Incorrect checksum...");
 		 	
 		}
 
 	}
 	public static short checksum(byte[] b) {
 		int checkSum = 0;
-		int value;
-		for (int i = 0; i < b.length / 2; i++) {
+		int value, length;
+		if (b.length % 2 == 1)
+			length = b.length / 2 + 1;
+		else
+			length = b.length / 2;
+		for (int i = 0; i < length; i++) {
+				
 			try  {
-				value = twoBytesToShort(b[i * 2], b[i * 2 + 1]);
+				value = (((b[i * 2] << 8) & 0xFF00) | ((b[i * 2 + 1]) & 0xFF));
+				checkSum += value;
 			}
 			catch (Exception IndexOutOfBoundsException) {
-				value = (((b[i] << 8) & 0xFF00) | ((b[i + 1]) & 0xFF));
+				checkSum += (b[i * 2] << 8 & 0xFF00);
+				
 			}
-			checkSum += (int) value;
 			if ((checkSum & 0xFFFF0000) > 0) {
 				//checkSum += (b[i] << 8 & 0xFF00);
 				checkSum = checkSum & 0xFFFF;
 				checkSum++;
 			}
-			
-			/*try {
-				Math.addExact(checkSum, (int)value);
-			}
-			catch (Exception ArithmeticException) {
-				
-			}*/
 					
 		}
 		return (short)(~checkSum & 0xFFFF);
 		
 	}
-	public static short twoBytesToShort(byte b1, byte b2) {
-        return (short) ((b1 << 8) | (b2 & 0xFF));
-}
-
 }
